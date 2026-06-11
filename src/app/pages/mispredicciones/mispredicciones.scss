@@ -787,3 +787,38 @@ $radius-xl:     20px;
   color: $text-muted;
   font-weight: 500;
 }
+
+/* Estilos para el Toast de Éxito */
+.toast-success {
+  position: fixed;
+  top: 20px;
+  right: 20px; /* Si lo querés centrado podés usar left: 50%; transform: translateX(-50%); */
+  background-color: #10b981; /* Un verde vibrante y moderno */
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  animation: slideInRight 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.toast-icon {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+/* Animación para que entre deslizándose */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

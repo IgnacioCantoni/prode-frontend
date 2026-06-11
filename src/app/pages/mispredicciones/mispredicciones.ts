@@ -187,26 +187,41 @@ export class MisPredicciones implements OnInit {
     this.modalMatch = null;
   }
 
-  confirmPrediction(): void {
-    if (!this.modalMatch) return;
-    this.saving    = true;
-    this.saveError = '';
-    this.api.savePrediction({
-      matchId:   this.modalMatch.id,
-      homeScore: this.modalHome,
-      awayScore: this.modalAway,
-    }).subscribe({
-      next: () => {
+  confirmPrediction() {
+  this.saving = true;
+  this.saveError = null;
+
+  // Asumiendo que acá llamas a tu servicio para guardar...
+  this.prodeService.guardarPrediccion(this.modalMatch.id, this.modalHome, this.modalAway)
+    .subscribe({
+      next: (res) => {
         this.saving = false;
-        this.closeModal();
-        this.loadData();
+        
+        // 1. Cerramos el modal inmediatamente
+        this.closeModal(); 
+        
+        // 2. Mostramos el cartel de éxito
+        this.showSuccess('¡Predicción registrada correctamente!');
+        
+        // (Opcional) Acá podrías recargar los partidos para que se vea el cambio
+        // this.loadMatches(); 
       },
       error: (err) => {
-        this.saving    = false;
-        this.saveError = err?.error?.error ?? 'No se pudo guardar. Intentá de nuevo.';
+        this.saving = false;
+        this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
       }
     });
-  }
+    }
+
+        // Función auxiliar para mostrar y ocultar el cartel solo
+      showSuccess(message: string) {
+        this.successMessage = message;
+  
+    // A los 3 segundos (3000ms), borramos el mensaje para que desaparezca
+      setTimeout(() => {
+        this.successMessage = null;
+      }, 3000);
+    }
 
   private calcStatus(points: number | null): PredictionStatus {
     if (points === null) return 'pending';
