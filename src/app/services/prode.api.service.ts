@@ -34,6 +34,6 @@ export class ProdeApiService {
 
   // ─── Ranking ─────────────────────────────────────────────────
   getRanking(): Observable<RankingEntry[]> {
-    return this.http.get<RankingEntry[]>(`${environment.apiUrl}/ranking`, this.opts);
+    return this.http.get<RankingEntry[]>(`${environment.apiUrl}/ranking/2`, this.opts);
   }
 }
