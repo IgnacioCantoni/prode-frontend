@@ -202,6 +202,7 @@ export class MisPredicciones implements OnInit {
       next: (res: any) => {
         this.saving = false;
         this.closeModal(); 
+        this.loadData(); // Recarga partidos y predicciones para mostrar los cambios
         this.showSuccess('¡Predicción registrada correctamente!');
       },
       error: (err: any) => {
