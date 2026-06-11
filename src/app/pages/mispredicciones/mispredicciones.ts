@@ -179,7 +179,7 @@ export class MisPredicciones implements OnInit {
     this.modalMatch = match;
     this.modalHome  = match.predictedHome ?? 0;
     this.modalAway  = match.predictedAway ?? 0;
-    this.saveError  = '';
+    this.saveError  = "";
     this.modalOpen  = true;
   }
 
@@ -194,23 +194,24 @@ export class MisPredicciones implements OnInit {
     this.saving = true;
     this.saveError = "";
 
-    // ✅ Corregido el llamado al servicio utilizando 'this.api'
-    this.api.guardarPrediccion(this.modalMatch.id, this.modalHome, this.modalAway)
-      .subscribe({
-        next: (res: any) => {
-          this.saving = false;
-          
-          this.closeModal(); 
-          this.showSuccess('¡Predicción registrada correctamente!');
-        },
-        error: (err: any) => {
-          this.saving = false;
-          this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
-        }
-      });
-  }
+    this.api.savePrediction({
+      matchId: this.modalMatch.id, 
+      homeScore: this.modalHome, 
+      awayScore: this.modalAway
+    }).subscribe({
+      next: (res: any) => {
+        this.saving = false;
+        this.closeModal(); 
+        this.showSuccess('¡Predicción registrada correctamente!');
+      },
+      error: (err: any) => {
+        this.saving = false;
+        this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
+      }
+    }); // ✅ Llave y paréntesis cerrados correctamente para el subscribe
+  } // ✅ Llave cerrada correctamente para la función confirmPrediction
 
-  // Función auxiliar para mostrar y ocultar el cartel solo
+  // ✅ Función auxiliar ahora correctamente ubicada "afuera" de confirmPrediction
   showSuccess(message: string) {
     this.successMessage = message;
   
@@ -247,7 +248,6 @@ export class MisPredicciones implements OnInit {
     const diff = new Date(dateStr).getTime() - Date.now();
     const h    = Math.floor(diff / (1000 * 60 * 60));
     if (h < 1)    return 'Cierra pronto';
-    // ✅ Corregido el uso de backticks en los retornos
     if (h < 24)   return `Cierra en ${h}h`;
     const d = Math.floor(h / 24);
     return `Cierra en ${d}d`;
