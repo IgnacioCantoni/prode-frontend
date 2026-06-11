@@ -64,6 +64,7 @@ export class MisPredicciones implements OnInit {
   modalAway   = 0;
   saving      = false;
   saveError   = '';
+  successMessage: string | null = null; // ✅ Variable agregada para el toast
 
   userStats = {
     totalPoints:      0,
@@ -188,40 +189,35 @@ export class MisPredicciones implements OnInit {
   }
 
   confirmPrediction() {
-  this.saving = true;
-  this.saveError = null;
+    if (!this.modalMatch) return;
 
-  // Asumiendo que acá llamas a tu servicio para guardar...
-  this.prodeService.guardarPrediccion(this.modalMatch.id, this.modalHome, this.modalAway)
-    .subscribe({
-      next: (res) => {
-        this.saving = false;
-        
-        // 1. Cerramos el modal inmediatamente
-        this.closeModal(); 
-        
-        // 2. Mostramos el cartel de éxito
-        this.showSuccess('¡Predicción registrada correctamente!');
-        
-        // (Opcional) Acá podrías recargar los partidos para que se vea el cambio
-        // this.loadMatches(); 
-      },
-      error: (err) => {
-        this.saving = false;
-        this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
-      }
-    });
-    }
+    this.saving = true;
+    this.saveError = "";
 
-        // Función auxiliar para mostrar y ocultar el cartel solo
-      showSuccess(message: string) {
-        this.successMessage = message;
+    // ✅ Corregido el llamado al servicio utilizando 'this.api'
+    this.api.guardarPrediccion(this.modalMatch.id, this.modalHome, this.modalAway)
+      .subscribe({
+        next: (res: any) => {
+          this.saving = false;
+          
+          this.closeModal(); 
+          this.showSuccess('¡Predicción registrada correctamente!');
+        },
+        error: (err: any) => {
+          this.saving = false;
+          this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
+        }
+      });
+  }
+
+  // Función auxiliar para mostrar y ocultar el cartel solo
+  showSuccess(message: string) {
+    this.successMessage = message;
   
-    // A los 3 segundos (3000ms), borramos el mensaje para que desaparezca
-      setTimeout(() => {
-        this.successMessage = null;
-      }, 3000);
-    }
+    setTimeout(() => {
+      this.successMessage = null;
+    }, 3000);
+  }
 
   private calcStatus(points: number | null): PredictionStatus {
     if (points === null) return 'pending';
@@ -251,6 +247,7 @@ export class MisPredicciones implements OnInit {
     const diff = new Date(dateStr).getTime() - Date.now();
     const h    = Math.floor(diff / (1000 * 60 * 60));
     if (h < 1)    return 'Cierra pronto';
+    // ✅ Corregido el uso de backticks en los retornos
     if (h < 24)   return `Cierra en ${h}h`;
     const d = Math.floor(h / 24);
     return `Cierra en ${d}d`;
