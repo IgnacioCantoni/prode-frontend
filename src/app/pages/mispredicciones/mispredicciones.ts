@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProdeApiService } from '../../services/prode.api.service';
@@ -50,6 +50,7 @@ export interface PendingMatchView {
 export class MisPredicciones implements OnInit {
   private api  = inject(ProdeApiService);
   private auth = inject(AuthService);
+  private cdRef = inject(ChangeDetectorRef);
 
   activeTab: ActiveTab = 'pendientes';
   loading = true;
@@ -187,6 +188,7 @@ export class MisPredicciones implements OnInit {
     console.log('Cerrando modal');
     this.modalOpen  = false;
     this.modalMatch = null;
+    this.cdRef.detectChanges(); // Asegura que el modal se oculte inmediatamente
   }
 
   confirmPrediction() {
@@ -204,11 +206,13 @@ export class MisPredicciones implements OnInit {
         this.saving = false;
         this.closeModal(); 
         this.loadData(); // Recarga partidos y predicciones para mostrar los cambios
+        this.cdRef.detectChanges(); // Asegura que la vista se actualice con los nuevos datos
         this.showSuccess('¡Predicción registrada correctamente!');
       },
       error: (err: any) => {
         this.saving = false;
         this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
+        this.cdRef.detectChanges(); // Asegura que el mensaje de error se muestre inmediatamente
       }
     }); // ✅ Llave y paréntesis cerrados correctamente para el subscribe
   } // ✅ Llave cerrada correctamente para la función confirmPrediction
