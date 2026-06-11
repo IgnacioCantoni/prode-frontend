@@ -17,14 +17,14 @@ export class AuthService {
 
   login(username: string, email: string): Observable<{ user: User }> {
     return this.http
-      .post<{ user: User }>(${environment.apiUrl}/login, { username, email }, { withCredentials: true })
+      .post<{ user: User }>(`${environment.apiUrl}/login`, { username, email }, { withCredentials: true })
       .pipe(tap(res => this._user.set(res.user)));
   }
 
   logout(): void {
     // Le pegamos al backend para que destruya la cookie
     this.http
-      .post(${environment.apiUrl}/logout, {}, { withCredentials: true })
+      .post(`${environment.apiUrl}/logout`, {}, { withCredentials: true })
       .subscribe({
         next: () => this.clearSession(),
         error: () => this.clearSession() // Si falla, igual lo deslogueamos en el front
@@ -33,7 +33,7 @@ export class AuthService {
 
   loadCurrentUser(): Observable<{ user: User }> {
     return this.http
-      .get<{ user: User }>(${environment.apiUrl}/me, { withCredentials: true })
+      .get<{ user: User }>(`${environment.apiUrl}/me`, { withCredentials: true })
       .pipe(
         tap(res => this._user.set(res.user)),
         catchError(err => {
