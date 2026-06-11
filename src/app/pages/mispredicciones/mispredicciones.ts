@@ -184,6 +184,7 @@ export class MisPredicciones implements OnInit {
   }
 
   closeModal(): void {
+    console.log('Cerrando modal');
     this.modalOpen  = false;
     this.modalMatch = null;
   }
