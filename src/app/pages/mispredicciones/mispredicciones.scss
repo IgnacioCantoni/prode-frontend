@@ -216,10 +216,39 @@ $radius-xl:     20px;
   border-radius: 100px;
   white-space: nowrap;
 
-  &.exact   { background: $green-bg;  color: $green;  border: 1px solid rgba(61,220,132,.25); }
-  &.correct { background: $yellow-bg; color: $yellow; border: 1px solid rgba(255,209,102,.25); }
-  &.miss    { background: $red-bg;    color: $red;    border: 1px solid rgba(255,107,107,.2); }
-  &.pending { background: $accent-glow; color: $accent; border: 1px solid rgba(116,172,223,.2); }
+  &.exact {
+    background: $green-bg;
+    color: $green;
+    border: 1px solid rgba(61, 220, 132, 0.25);
+  }
+
+  &.difference {
+    /* Un azul brillante para el acierto de 5 puntos */
+    background: rgba(116, 172, 223, 0.15); /* Equivalente a un $blue-bg */
+    color: #74ACDF; /* Equivalente a un $blue */
+    border: 1px solid rgba(116, 172, 223, 0.25);
+  }
+
+  &.winner {
+    /* Reutilizamos tu estilo amarillo para los 3 puntos */
+    background: $yellow-bg;
+    color: $yellow;
+    border: 1px solid rgba(255, 209, 102, 0.25);
+  }
+
+  &.partial {
+    /* Un violeta sutil para el acierto parcial de 1 punto */
+    background: rgba(167, 139, 250, 0.15); /* Equivalente a un $purple-bg */
+    color: #A78BFA; /* Equivalente a un $purple */
+    border: 1px solid rgba(167, 139, 250, 0.25);
+  }
+
+  &.miss {
+    /* Te dejo también el de 0 puntos por si no lo tenías (un gris suave o rojo) */
+    background: rgba(255, 107, 107, 0.1); 
+    color: #FF6B6B;
+    border: 1px solid rgba(255, 107, 107, 0.2);
+  }
 }
 
 // ─── Pendientes ───────────────────────────────────────────────
