@@ -1,12 +1,12 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subscription, interval } from 'rxjs'; // ✅ Agregamos RxJS para el temporizador
 import { ProdeApiService } from '../../services/prode.api.service';
 import { AuthService } from '../../services/auth.service';
 import { Match, Prediction } from '../../models/prode.model';
 
-export type PredictionStatus = 'pending' | 'exact' | 'correct' | 'miss';
-export type ActiveTab = 'pendientes' | 'historial' | 'amigos';
+export type PredictionStatus = 'pending' | 'exact' | 'difference' | 'winner' | 'partial' | 'miss';export type ActiveTab = 'pendientes' | 'historial' | 'amigos';
 
 export interface PredictionView {
   id: number;
@@ -47,10 +47,12 @@ export interface PendingMatchView {
   templateUrl: './mispredicciones.html',
   styleUrls: ['./mispredicciones.scss']
 })
-export class MisPredicciones implements OnInit {
+export class MisPredicciones implements OnInit, OnDestroy { // ✅ Implementamos OnDestroy
   private api  = inject(ProdeApiService);
   private auth = inject(AuthService);
   private cdRef = inject(ChangeDetectorRef);
+
+  private refreshSub?: Subscription; // ✅ Variable para guardar el temporizador
 
   activeTab: ActiveTab = 'pendientes';
   loading = true;
@@ -65,7 +67,7 @@ export class MisPredicciones implements OnInit {
   modalAway   = 0;
   saving      = false;
   saveError   = '';
-  successMessage: string | null = null; // ✅ Variable agregada para el toast
+  successMessage: string | null = null;
 
   userStats = {
     totalPoints:      0,
@@ -76,7 +78,19 @@ export class MisPredicciones implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadData();
+    this.loadData(); // Carga inicial visual
+
+    // ✅ Arrancamos el Polling: Se ejecuta de fondo cada 60 segundos
+    this.refreshSub = interval(60000).subscribe(() => {
+      this.silentReload();
+    });
+  }
+
+  ngOnDestroy(): void {
+    // ✅ Apagamos el temporizador al salir de la pantalla para no saturar el navegador ni la API
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
   }
 
   private loadData(): void {
@@ -89,10 +103,25 @@ export class MisPredicciones implements OnInit {
       this.myPredictions = preds   ?? [];
       this.calcStats();
       this.loading = false;
+      this.cdRef.detectChanges(); // Forzamos actualización visual al terminar de cargar
     }).catch(() => {
       this.error   = 'No se pudieron cargar tus predicciones.';
       this.loading = false;
+      this.cdRef.detectChanges();
     });
+  }
+
+  // ✅ Nueva función: Carga los datos sin activar el spinner de "Cargando..."
+  private silentReload(): void {
+    Promise.all([
+      this.api.getMatches().toPromise(),
+      this.api.getMyPredictions().toPromise(),
+    ]).then(([matches, preds]) => {
+      this.allMatches    = matches ?? [];
+      this.myPredictions = preds   ?? [];
+      this.calcStats();
+      this.cdRef.detectChanges(); // Obligamos a Angular a repintar silenciosamente si hay goles/puntos nuevos
+    }).catch(err => console.error('Error recargando datos de fondo:', err));
   }
 
   private calcStats(): void {
@@ -128,11 +157,12 @@ export class MisPredicciones implements OnInit {
 
   get pendingMatches(): PendingMatchView[] {
     return this.allMatches
-      .filter(m => m.status === 'SCHEDULED' || m.status === 'upcoming')
+      .filter(m => m.status === 'SCHEDULED' || m.status === 'upcoming' || m.status === 'IN_PLAY' || m.status === 'PAUSED')
       .map(m => {
         const pred    = this.myPredictions.find(p => String(p.match_id) === String(m.id));
         const msLeft  = new Date(m.date).getTime() - Date.now();
-        const canEdit = msLeft > 60 * 60 * 1000;
+        // Si el partido está en juego, ya no se puede editar
+        const canEdit = msLeft > 60 * 60 * 1000 && m.status !== 'IN_PLAY' && m.status !== 'PAUSED'; 
         return {
           id:            m.id as number,
           homeTeam:      m.home_team,
@@ -188,7 +218,7 @@ export class MisPredicciones implements OnInit {
     console.log('Cerrando modal');
     this.modalOpen  = false;
     this.modalMatch = null;
-    this.cdRef.detectChanges(); // Asegura que el modal se oculte inmediatamente
+    this.cdRef.detectChanges(); 
   }
 
   confirmPrediction() {
@@ -205,32 +235,36 @@ export class MisPredicciones implements OnInit {
       next: (res: any) => {
         this.saving = false;
         this.closeModal(); 
-        this.loadData(); // Recarga partidos y predicciones para mostrar los cambios
-        this.cdRef.detectChanges(); // Asegura que la vista se actualice con los nuevos datos
+        this.silentReload(); // Usamos silentReload acá también para evitar el spinner completo al guardar
         this.showSuccess('¡Predicción registrada correctamente!');
       },
       error: (err: any) => {
         this.saving = false;
         this.saveError = 'Hubo un error al guardar. Inténtalo de nuevo.';
-        this.cdRef.detectChanges(); // Asegura que el mensaje de error se muestre inmediatamente
+        this.cdRef.detectChanges(); 
       }
-    }); // ✅ Llave y paréntesis cerrados correctamente para el subscribe
-  } // ✅ Llave cerrada correctamente para la función confirmPrediction
+    }); 
+  } 
 
-  // ✅ Función auxiliar ahora correctamente ubicada "afuera" de confirmPrediction
   showSuccess(message: string) {
     this.successMessage = message;
   
     setTimeout(() => {
       this.successMessage = null;
+      this.cdRef.detectChanges(); // Aseguramos que el cartel se borre visualmente
     }, 3000);
   }
 
   private calcStatus(points: number | null): PredictionStatus {
     if (points === null) return 'pending';
-    if (points === 3)    return 'exact';
-    if (points === 1)    return 'correct';
-    return 'miss';
+    
+    // Tabla de puntuación actualizada
+    if (points >= 8) return 'exact';       // 8 u 11 pts (Marcador exacto)
+    if (points >= 5) return 'difference';  // 5 u 8 pts (Misma diferencia o empate)
+    if (points >= 3) return 'winner';      // 3 o 6 pts (Ganador correcto)
+    if (points >= 1) return 'partial';     // 1 o 4 pts (Goles de un solo equipo)
+    
+    return 'miss';                         // 0 pts
   }
 
   private formatDate(dateStr: string): string {
@@ -262,9 +296,11 @@ export class MisPredicciones implements OnInit {
   setTab(tab: ActiveTab) { this.activeTab = tab; }
 
   getStatusLabel(status: PredictionStatus): string {
-    if (status === 'exact')   return '+3 Exacto';
-    if (status === 'correct') return '+1 Resultado';
-    if (status === 'miss')    return '0 pts';
+    if (status === 'exact')      return '+8 Pleno';
+    if (status === 'difference') return '+5 Diferencia/Empate';
+    if (status === 'winner')     return '+3 Resultado';
+    if (status === 'partial')    return '+1 Parcial';
+    if (status === 'miss')       return '0 pts';
     return 'Pendiente';
   }
 }

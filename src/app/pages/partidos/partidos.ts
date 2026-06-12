@@ -1,9 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription, interval } from 'rxjs'; // ✅ Agregamos RxJS
 import { ProdeApiService } from '../../services/prode.api.service';
 import { Match } from '../../models/prode.model';
 
-export type MatchStatus = 'upcoming' | 'live' | 'finished' | 'SCHEDULED' | 'IN_PLAY' | 'FINISHED';
+export type MatchStatus = 'upcoming' | 'live' | 'finished' | 'SCHEDULED' | 'IN_PLAY' | 'FINISHED' | 'PAUSED';
 export type Phase = 'grupos' | 'octavos' | 'cuartos' | 'semis' | 'final';
 
 export interface Group {
@@ -34,8 +35,11 @@ export interface KnockoutMatch {
   templateUrl: './partidos.html',
   styleUrls: ['./partidos.scss']
 })
-export class Partidos implements OnInit {
+export class Partidos implements OnInit, OnDestroy { // ✅ Implementamos OnDestroy
   private api = inject(ProdeApiService);
+  private cdr = inject(ChangeDetectorRef); // ✅ Inyectamos el detector de cambios
+
+  private refreshSub?: Subscription; // ✅ Guardamos el temporizador
 
   activePhase: Phase = 'grupos';
   activeGroup = 'A';
@@ -44,10 +48,10 @@ export class Partidos implements OnInit {
 
   phases = [
     { key: 'grupos',  label: 'Fase de Grupos', icon: '⚽' },
-    { key: 'octavos', label: 'Octavos',         icon: '🔵' },
-    { key: 'cuartos', label: 'Cuartos',          icon: '🟡' },
-    { key: 'semis',   label: 'Semifinales',      icon: '🔴' },
-    { key: 'final',   label: 'Final',            icon: '🏆' },
+    { key: 'octavos', label: 'Octavos',        icon: '🔵' },
+    { key: 'cuartos', label: 'Cuartos',        icon: '🟡' },
+    { key: 'semis',   label: 'Semifinales',    icon: '🔴' },
+    { key: 'final',   label: 'Final',          icon: '🏆' },
   ];
 
   groups: Group[] = [];
@@ -57,15 +61,45 @@ export class Partidos implements OnInit {
   };
 
   ngOnInit(): void {
+    this.loadData(); // Carga inicial (con spinner)
+
+    // ✅ Polling: Actualiza el fixture cada 60 segundos por si hay goles o cambios de estado
+    this.refreshSub = interval(60000).subscribe(() => {
+      this.silentReload();
+    });
+  }
+
+  ngOnDestroy(): void {
+    // ✅ Detenemos el reloj cuando cambiamos de pestaña
+    if (this.refreshSub) {
+      this.refreshSub.unsubscribe();
+    }
+  }
+
+  private loadData(): void {
+    this.loading = true;
     this.api.getMatches().subscribe({
       next: (matches) => {
         this.buildGroups(matches);
         this.loading = false;
+        this.cdr.detectChanges(); // Forzamos la actualización visual
       },
       error: () => {
         this.error   = 'No se pudieron cargar los partidos.';
         this.loading = false;
+        this.cdr.detectChanges();
       }
+    });
+  }
+
+  // ✅ Recarga los resultados de fondo sin mostrar que está "Cargando..."
+  private silentReload(): void {
+    this.api.getMatches().subscribe({
+      next: (matches) => {
+        this.buildGroups(matches);
+        this.cdr.detectChanges(); // Repinta los goles o el estado "En vivo" / "Finalizado"
+      },
+      error: (err) => console.error('Error recargando partidos de fondo:', err)
     });
   }
 
@@ -89,7 +123,8 @@ export class Partidos implements OnInit {
 
     this.groups = Array.from(groupMap.values()).sort((a, b) => a.letter.localeCompare(b.letter));
 
-    if (this.groups.length > 0) {
+    // Si ya hay un grupo activo seleccionado, no lo pisamos (para no volver a la pestaña A en cada recarga)
+    if (this.groups.length > 0 && !this.groups.find(g => g.letter === this.activeGroup)) {
       this.activeGroup = this.groups[0].letter;
     }
   }
@@ -102,13 +137,13 @@ export class Partidos implements OnInit {
   setGroup(letter: string) { this.activeGroup = letter; }
 
   getStatusLabel(status: string): string {
-    if (status === 'IN_PLAY' || status === 'live')      return 'En vivo';
+    if (status === 'IN_PLAY' || status === 'live' || status === 'PAUSED') return 'En vivo';
     if (status === 'FINISHED' || status === 'finished') return 'Finalizado';
     return 'Próximo';
   }
 
   getNormalizedStatus(status: string): string {
-    if (status === 'IN_PLAY')  return 'live';
+    if (status === 'IN_PLAY' || status === 'PAUSED') return 'live';
     if (status === 'FINISHED') return 'finished';
     return 'upcoming';
   }

@@ -6,7 +6,7 @@ export interface User {
 }
 
 // ─── Matches ──────────────────────────────────────────────────
-export type MatchStatus = 'upcoming' | 'live' | 'finished' | 'SCHEDULED' | 'IN_PLAY' | 'FINISHED';
+export type MatchStatus = 'upcoming' | 'live' | 'finished' | 'SCHEDULED' | 'FINISHED' | 'IN_PLAY' | 'PAUSED';
 
 export interface Match {
   id: string | number;
