@@ -81,7 +81,7 @@ export class MisPredicciones implements OnInit, OnDestroy { // ✅ Implementamos
     this.loadData(); // Carga inicial visual
 
     // ✅ Arrancamos el Polling: Se ejecuta de fondo cada 60 segundos
-    this.refreshSub = interval(60000).subscribe(() => {
+    this.refreshSub = interval(5000).subscribe(() => {
       this.silentReload();
     });
   }

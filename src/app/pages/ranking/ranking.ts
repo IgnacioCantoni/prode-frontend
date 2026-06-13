@@ -46,7 +46,7 @@ export class Ranking implements OnInit, OnDestroy { // ✅ Implementamos OnDestr
     this.loadData(); // Carga inicial con spinner
 
     // ✅ Polling: Actualiza el ranking cada 60 segundos 
-    this.refreshSub = interval(60000).subscribe(() => {
+    this.refreshSub = interval(5000).subscribe(() => {
       this.silentReload();
     });
   }

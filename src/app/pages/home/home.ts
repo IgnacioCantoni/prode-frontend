@@ -70,7 +70,7 @@ export class Home implements OnInit, OnDestroy {
 
     this.loadDashboardData(false); 
 
-    this.refreshSub = interval(100).subscribe(() => {
+    this.refreshSub = interval(5000).subscribe(() => {
       this.loadDashboardData(true);
     });
   }
