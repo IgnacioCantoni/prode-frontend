@@ -176,6 +176,27 @@ $radius-xl:     20px;
     grid-template-columns: repeat(2, 1fr);
   }
 }
+.badge-prediction {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &.done {
+    background: rgba(116, 172, 223, 0.15); /* Azulcito suave */
+    color: #74ACDF;
+    border: 1px solid rgba(116, 172, 223, 0.25);
+  }
+
+  &.missing {
+    background: rgba(255, 107, 107, 0.1); /* Rojito/Naranja de alerta */
+    color: #FF6B6B;
+    border: 1px solid rgba(255, 107, 107, 0.25);
+  }
+}
 
 .stat-card {
   background: rgba(19, 22, 30, 0.6); // ← era $bg-surface sólido
@@ -709,3 +730,389 @@ $radius-xl:     20px;
   object-fit: contain;
   flex-shrink: 0;
 }
+
+
+/* =========================================
+   NUEVA LISTA DE PREDICCIONES (Con banderas)
+   ========================================= */
+
+.prediction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background 0.2s ease;
+
+  &.clickable {
+    cursor: pointer;
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .teams-display {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+
+      &.home { justify-content: flex-end; }
+      &.away { justify-content: flex-start; }
+
+      .mini-flag {
+        width: 24px;
+        height: 16px;
+        object-fit: cover;
+        border-radius: 3px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+      
+      .team-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #e2e8f0;
+      }
+    }
+
+    .score-display {
+      font-weight: 700;
+      font-size: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: #ffffff;
+      white-space: nowrap;
+    }
+  }
+
+  /* Ajuste para el texto de fallback ("Partido #123") */
+  .fallback-text {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    flex: 1;
+  }
+}
+
+/* =========================================
+   MODAL DE PREDICCIONES DEL PARTIDO
+   ========================================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-box {
+  background: #1e293b; /* Ajustalo al color de fondo de tus tarjetas */
+  width: 100%;
+  max-width: 400px;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.05);
+  animation: slideUpFade 0.3s ease-out;
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+
+    .modal-title {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #f8fafc;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: color 0.2s;
+      
+      &:hover {
+        color: #ef4444;
+      }
+    }
+  }
+}
+
+.modal-match-summary {
+  text-align: center;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+
+  .match-time {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 12px;
+  }
+  
+  .modal-teams {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: #ffffff;
+
+    .modal-crest { 
+      width: 36px; 
+      height: 24px;
+      object-fit: cover;
+      border-radius: 4px; 
+    }
+    
+    .modal-vs { 
+      color: #64748b; 
+      font-size: 0.9rem; 
+      margin: 0 8px;
+    }
+  }
+}
+
+.modal-predictions-list {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 8px; /* Espacio para el scrollbar */
+
+  /* Estilizado del scrollbar para que quede oscuro */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+  }
+
+  .loading-text, .empty-text {
+    text-align: center;
+    color: #94a3b8;
+    padding: 20px 0;
+    font-size: 0.95rem;
+  }
+
+  .player-pred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .player-name { 
+      font-weight: 500; 
+      color: #cbd5e1;
+    }
+    
+    .player-score { 
+      font-weight: 700; 
+      color: #ffffff;
+      background: rgba(255,255,255,0.1); 
+      padding: 4px 12px; 
+      border-radius: 6px; 
+      letter-spacing: 1px;
+    }
+  }
+}
+
+/* Animación de entrada para el modal */
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+/* ================================================== */
+/* EFECTO HOVER PARA TARJETAS CLICKEABLES             */
+/* ================================================== */
+.match-card.clickable-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    /* Un brillo sutil de fondo si tenés tema oscuro */
+    background: rgba(255, 255, 255, 0.02); 
+  }
+}
+
+/* ================================================== */
+/* LISTA DE MIS PREDICCIONES (Banderas enfrentadas)   */
+/* ================================================== */
+
+.prediction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Manda los equipos a la izq y los puntos a la der */
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background 0.2s ease;
+
+  &.clickable {
+    cursor: pointer;
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  /* Contenedor central bien compacto */
+  .teams-display {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Separación fija y chiquita entre Local - Resultado - Visitante */
+
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto !important; 
+      width: auto !important;
+      justify-content: flex-start !important;
+
+      .mini-flag {
+        width: 24px;
+        height: 16px;
+        object-fit: cover;
+        border-radius: 3px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      }
+      
+      .team-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #e2e8f0;
+        white-space: nowrap;
+      }
+    }
+
+    .score-display {
+      font-weight: 700;
+      font-size: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px 12px;
+      border-radius: 6px;
+      color: #ffffff;
+      white-space: nowrap;
+      text-align: center;
+    }
+  }
+
+  /* El botón de puntos se acomoda solo a la derecha por el space-between de arriba */
+  .fallback-text {
+    font-size: 0.9rem;
+    color: #94a3b8;
+  }
+}
+
+.modal-predictions-list {
+  .player-pred-row {
+    .pred-right-side {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      
+      /* Ajuste de tamaño para los botones dentro del modal */
+      .pred-points {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        min-width: 85px;
+        text-align: center;
+        border-radius: 20px; /* Para asegurar la forma de pastilla */
+      }
+    }
+  }
+}
+
+
+/* ================================================== */
+/* BADGE ANIMADO Y CRONÓMETRO EN VIVO                 */
+/* ================================================== */
+.live-indicator-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(16, 185, 129, 0.15); /* Fondo verde semitransparente */
+  color: #10b981; /* Verde esmeralda vibrante */
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+
+  .live-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #10b981;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulse-live 1.5s infinite;
+  }
+}
+
+.live-timer {
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #fbbf24; /* Color amarillento/dorado para el reloj */
+}
+
+.live-actual-score {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+}
+
+@keyframes pulse-live {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+

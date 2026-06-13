@@ -1,7 +1,6 @@
 @if (true) {
 <div class="home-container">
 
-  <!-- HERO -->
   <section class="hero-section" @fadeSlideIn>
     <div class="hero-glow"></div>
     <div class="hero-content">
@@ -25,7 +24,6 @@
     </div>
   </section>
 
-  <!-- STATS ROW -->
   <section class="stats-row">
     <div class="stat-card accent" @statBounceIn>
       <span class="stat-icon">🏆</span>
@@ -57,10 +55,8 @@
     </div>
   </section>
 
-  <!-- MAIN GRID -->
   <div class="main-grid">
 
-    <!-- Próximos Partidos -->
     <section class="section-card" @fadeSlideIn>
       <div class="section-header">
         <div class="section-title-group">
@@ -76,35 +72,59 @@
 
       <div class="matches-list" @staggerList>
         @for (match of upcomingMatches; track match.id) {
-          <div class="match-card">
+          <div class="match-card clickable-card" (click)="openMatchModal(match.id)">
+            
             <div class="match-meta">
               <span class="match-group">{{ match.group ?? '' }}</span>
-              <span class="match-date">{{ formatDate(match.date) }}</span>
+              
+              @if (match.status === 'IN_PLAY' || match.status === 'live' || match.status === 'PAUSED') {
+                <div class="live-indicator-wrapper">
+                  <span class="live-badge">
+                    <span class="live-dot"></span> En vivo
+                  </span>
+                  <span class="live-timer">{{ getLiveTimer(match.date, match.status) }}</span>
+                </div>
+              } @else {
+                <span class="match-date">{{ formatDate(match.date) }}</span>
+              }
             </div>
+
             <div class="match-teams">
               <div class="team home">
                 <img [src]="match.home_flag" [alt]="match.home_team" class="team-crest" onerror="this.style.display='none'" />
                 <span class="team-name">{{ match.home_team }}</span>
               </div>
               <div class="match-score-box">
-                <span class="vs-time">{{ formatTime(match.date) }}</span>
-                <span class="vs-separator">VS</span>
+                @if (match.status === 'IN_PLAY' || match.status === 'live' || match.status === 'PAUSED') {
+                  <span class="live-actual-score">{{ match.home_score ?? 0 }} - {{ match.away_score ?? 0 }}</span>
+                } @else {
+                  <span class="vs-time">{{ formatTime(match.date) }}</span>
+                  <span class="vs-separator">VS</span>
+                }
               </div>
               <div class="team away">
                 <img [src]="match.away_flag" [alt]="match.away_team" class="team-crest" onerror="this.style.display='none'" />
                 <span class="team-name">{{ match.away_team }}</span>
               </div>
             </div>
+
             <div class="match-footer">
-              <span class="stadium-name">📍 {{ match.stadium ?? '' }}</span>
-              <a routerLink="/partidos" class="predict-btn">Predecir</a>
+              @if (getPredictionForMatch(match.id); as pred) {
+                <span class="badge-prediction done">
+                  Tu predicción: {{ pred.home_score }} - {{ pred.away_score }}
+                </span>
+              } @else {
+                <span class="badge-prediction missing">
+                  ⚠️ Sin predecir
+                </span>
+              }
+              <a routerLink="/partidos" class="predict-btn" (click)="$event.stopPropagation()">Predecir</a>
             </div>
           </div>
         }
       </div>
     </section>
 
-    <!-- Mis Predicciones -->
     <section class="section-card section-card--delay" @fadeSlideIn>
       <div class="section-header">
         <div class="section-title-group">
@@ -115,21 +135,34 @@
       </div>
 
       <div class="predictions-list" @staggerList>
-        @for (pred of recentPredictions; track pred.id) {
-          <div class="prediction-card">
-            <span class="pred-date">Partido #{{ pred.match_id }}</span>
-            <div class="pred-match">
-              <div class="pred-score-display">
-                <span class="pred-num">{{ pred.home_score }}</span>
-                <span class="pred-dash">–</span>
-                <span class="pred-num">{{ pred.away_score }}</span>
-              </div>
-            </div>
-            <div class="pred-points" [ngClass]="getPointsClass(pred.points_earned)">
-              {{ getPointsLabel(pred.points_earned) }}
-            </div>
+  @for (pred of recentPredictions; track pred.id) {
+    <div class="prediction-row clickable" (click)="openMatchModal(pred.match_id)">
+      
+      @if (getMatchDetails(pred.match_id); as match) {
+        <div class="teams-display">
+          <div class="team home">
+            <img [src]="match.home_flag" class="mini-flag" onerror="this.style.display='none'">
+            <span class="team-name">{{ match.home_team }}</span>
           </div>
-        }
+          
+          <div class="score-display">
+            {{ pred.home_score }} - {{ pred.away_score }}
+          </div>
+          
+          <div class="team away">
+            <span class="team-name">{{ match.away_team }}</span>
+            <img [src]="match.away_flag" class="mini-flag" onerror="this.style.display='none'">
+          </div>
+        </div>
+      } @else {
+        <span class="fallback-text">Partido #{{ pred.match_id }}</span>
+      }
+
+      <div class="pred-points" [ngClass]="getPointsClass(pred.points_earned)">
+        {{ getPointsLabel(pred.points_earned) }}
+      </div>
+    </div>
+  }
 
         @if (recentPredictions.length === 0 && !loading) {
           <div class="empty-preds">Todavía no cargaste predicciones.</div>
@@ -159,4 +192,53 @@
 
   </div>
 </div>
+}
+
+@if (isModalOpen && selectedMatch) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      
+      <div class="modal-header">
+        <h2 class="modal-title">Predicciones</h2>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-match-summary">
+        <span class="match-time">{{ formatDate(selectedMatch.date) }} - {{ formatTime(selectedMatch.date) }}</span>
+        <div class="modal-teams">
+          <img [src]="selectedMatch.home_flag" class="modal-crest" onerror="this.style.display='none'">
+          <span>{{ selectedMatch.home_team }}</span>
+          <span class="modal-vs">vs</span>
+          <span>{{ selectedMatch.away_team }}</span>
+          <img [src]="selectedMatch.away_flag" class="modal-crest" onerror="this.style.display='none'">
+        </div>
+      </div>
+
+      <div class="modal-predictions-list">
+        @if (loadingModal) {
+          <p class="loading-text">Cargando jugadas...</p>
+        } @else {
+          @for (userPred of matchPredictions; track userPred.user_id) {
+            <div class="player-pred-row">
+              <span class="player-name">{{ userPred.username }}</span>
+              
+              <div class="pred-right-side">
+                <span class="player-score">{{ userPred.home_score }} - {{ userPred.away_score }}</span>
+                
+                @if (userPred.livePoints !== undefined) {
+                  <div class="pred-points" [ngClass]="getPointsClass(userPred.livePoints)">
+                    {{ getPointsLabel(userPred.livePoints) }}
+                  </div>
+                }
+              </div>
+
+            </div>
+          } @empty {
+            <p class="empty-text">Nadie predijo este partido aún.</p>
+          }
+        }
+      </div>
+
+    </div>
+  </div>
 }

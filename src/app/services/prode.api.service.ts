@@ -24,6 +24,7 @@ export class ProdeApiService {
     );
   }
 
+
   getMyPredictions(): Observable<Prediction[]> {
     return this.http.get<Prediction[]>(`${environment.apiUrl}/predictions/me`, this.opts);
   }
