@@ -68,11 +68,20 @@ export class Home implements OnInit, OnDestroy {
       this.userStats.avatar   = user.username.slice(0, 2).toUpperCase();
     }
 
+    // Carga inicial al entrar a la página
     this.loadDashboardData(false); 
 
-    this.refreshSub = interval(5000).subscribe(() => {
+    // ✅ ACTUALIZADOR DE DATOS: Cada 5 minutos (300000 milisegundos)
+    // Trae los goles nuevos sin saturar tu backend ni la API externa
+    this.refreshSub = interval(300000).subscribe(() => {
       this.loadDashboardData(true);
     });
+
+    // ✅ ACTUALIZADOR DEL RELOJ: Cada 1 segundo
+    // Solo actualiza la vista HTML para que el getLiveTimer avance, CERO consumo de internet
+    setInterval(() => {
+      this.cdr.detectChanges();
+    }, 1000);
   }
 
   ngOnDestroy(): void {

@@ -64,7 +64,7 @@ export class Partidos implements OnInit, OnDestroy { // ✅ Implementamos OnDest
     this.loadData(); // Carga inicial (con spinner)
 
     // ✅ Polling: Actualiza el fixture cada 60 segundos por si hay goles o cambios de estado
-    this.refreshSub = interval(5000).subscribe(() => {
+    this.refreshSub = interval(1000).subscribe(() => {
       this.silentReload();
     });
   }
